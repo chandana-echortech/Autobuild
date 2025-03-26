@@ -1,0 +1,51 @@
+name: iOS Build (IPA)
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+      # 1. Check out the repository code
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      # 2. Set up Xcode (already on macos-latest, but this is where you'd do any custom steps)
+      #    If you use CocoaPods or SwiftPM, you can install dependencies here
+      - name: Install dependencies
+        run: |
+          pod install --project-directory=YouriOSProjectFolder
+          # or if you're using SwiftPM, you might skip this step
+          # or if you have custom scripts, run them here
+
+      # 3. Build and archive the app
+      - name: Build and Archive
+        run: |
+          xcodebuild \
+            -workspace "YourApp.xcworkspace" \
+            -scheme "YourApp" \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath $PWD/build/YourApp.xcarchive \
+            clean archive
+
+      # 4. Export the IPA
+      - name: Export IPA
+        run: |
+          xcodebuild \
+            -exportArchive \
+            -archivePath $PWD/build/YourApp.xcarchive \
+            -exportOptionsPlist "ExportOptions.plist" \
+            -exportPath $PWD/build
+
+      # 5. Upload the IPA as a build artifact
+      - name: Upload IPA
+        uses: actions/upload-artifact@v2
+        with:
+          name: YourApp-IPA
+          path: build/YourApp.ipa
